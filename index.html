@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farmacias Colque — Sistema de Inventario</title>
+
+  <!-- ══════════════════════════════════════════════
+       CDN: Tailwind CSS
+  ══════════════════════════════════════════════ -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            emerald:  { 50:'#ecfdf5', 100:'#d1fae5', 200:'#a7f3d0', 300:'#6ee7b7', 400:'#34d399', 500:'#10b981', 600:'#059669', 700:'#047857', 800:'#065f46', 900:'#064e3b' },
+            corp:     { 50:'#eff6ff', 100:'#dbeafe', 200:'#bfdbfe', 300:'#93c5fd', 400:'#60a5fa', 500:'#3b82f6', 600:'#2563eb', 700:'#1d4ed8', 800:'#1e40af', 900:'#1e3a8a' },
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+        }
+      }
+    }
+  </script>
+
+  <!-- ══════════════════════════════════════════════
+       CDN: Alpine.js
+  ══════════════════════════════════════════════ -->
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <!-- ══════════════════════════════════════════════
+       CDN: Mermaid.js v10.9.1 (versión estable)
+  ══════════════════════════════════════════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose',
+      fontFamily: 'Inter, system-ui, sans-serif',
+      gantt: {
+        useMaxWidth: true,
+        axisFormat: '%d %b'
+      },
+      flowchart: {
+        useMaxWidth: true,
+        htmlLabels: true
+      },
+      state: {
+        useMaxWidth: true
+      },
+      class: {
+        useMaxWidth: true
+      }
+    });
+  </script>
+
+  <!-- ══════════════════════════════════════════════
+       CDN: FontAwesome 6
+  ══════════════════════════════════════════════ -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- ══════════════════════════════════════════════
+       CDN: Google Fonts – Inter
+  ══════════════════════════════════════════════ -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- ══════════════════════════════════════════════
+       Estilos complementarios
+  ══════════════════════════════════════════════ -->
+  <style>
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+    .fade-enter { animation: fadeIn .35s ease-out forwards; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    .mermaid-target svg { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+    .sidebar-link.active { border-left: 3px solid #059669; background: #ecfdf5; color: #065f46; font-weight: 600; }
+  </style>
+</head>
+
+<body
+  class="font-sans text-gray-700 bg-gray-50 antialiased"
+  x-data="{
+    seccion: 'inicio',
+    dropFase1: false,
+    dropFase2: false,
+    dropFase3: false,
+    mobileOpen: false,
+    sidebarOpen: false,
+    ir(s) {
+      this.seccion = s;
+      this.dropFase1 = false;
+      this.dropFase2 = false;
+      this.dropFase3 = false;
+      this.mobileOpen = false;
+      this.sidebarOpen = false;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      renderSectionDiagrams(s);
+    }
+  }"
+>
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  NAVBAR FIJA                                               ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<header class="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur border-b border-gray-200 shadow-sm">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+
+      <a href="#" @click.prevent="ir('inicio')" class="flex items-center gap-2.5 shrink-0 group">
+        <div class="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center text-white shadow-sm">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M19 10.5h-5.5V5c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v5.5H5c-.83 0-1.5.67-1.5 1.5s.67 1.5 1.5 1.5h5.5V19c0 .83.67 1.5 1.5 1.5s1.5-.67 1.5-1.5v-5.5H19c.83 0 1.5-.67 1.5-1.5s-.67-1.5-1.5-1.5z"/>
+          </svg>
+        </div>
+        <span class="text-xl font-bold tracking-tight text-slate-800">
+          Farmacias <span class="text-emerald-700">Colque</span>
+        </span>
+      </a>
+
+      <nav class="hidden lg:flex items-center gap-6 text-sm font-medium">
+        <button @click="ir('inicio')" class="py-2 transition"
+          :class="seccion === 'inicio' ? 'text-emerald-800 font-semibold border-b-2 border-emerald-600' : 'text-slate-600 hover:text-emerald-700'">
+          Inicio
+        </button>
+
+        <!-- Fase I -->
+        <div class="relative" @mouseleave="dropFase1 = false">
+          <button @mouseenter="dropFase1 = true; dropFase2 = false; dropFase3 = false"
+            class="py-2 transition flex items-center gap-1"
+            :class="['introduccion','antecedentes','planteamiento','arbol','preguntas','objetivos','metodo','planificacion'].includes(seccion) ? 'text-emerald-800 font-semibold border-b-2 border-emerald-600' : 'text-slate-600 hover:text-emerald-700'">
+            Fase I <i class="fa-solid fa-chevron-down text-[10px] ml-0.5"></i>
+          </button>
+          <div x-show="dropFase1" x-transition class="absolute left-0 mt-1 w-64 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+            <button @click="ir('introduccion')" class="block w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition text-sm"><i class="fa-solid fa-book-open w-5 text-center mr-2 text-emerald-500"></i>Introducción</button>
+            <button @click="ir('antecedentes')" class="block w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition text-sm"><i class="fa-solid fa-landmark w-5 text-center mr-2 text-emerald-500"></i>Antecedentes</button>
+            <button @click="ir('planteamiento')" class="block w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition text-sm"><i class="fa-solid fa-magnifying-glass w-5 text-center mr-2 text-emerald-500"></i>Planteamiento del Problema</button>
+            <button @click="ir('arbol')" class="block w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition text-sm"><i class="fa-solid fa-diagram-project w-5 text-center mr-2 text-emerald-500"></i>Árbol de Problemas</button>
+            <button @click="ir('preguntas')" class="block w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition text-sm"><i class="fa-solid fa-circle-question w-5 text-center mr-2 text-emerald-500"></i>Preguntas de Investigación</button>
+            <button @click="ir('objetivos')" class="block w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition text-sm"><i class="fa-solid fa-bullseye w-5 text-center mr-2 text-emerald-500"></i>Objetivos</button>
+            <button @click="ir('metodo')" class="block w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition text-sm"><i class="fa-solid fa-flask-vial w-5 text-center mr-2 text-emerald-500"></i>Método e Instrumentos</button>
+            <button @click="ir('planificacion')" class="block w-full text-left px-4 py-2 hover:bg-emerald-50 hover:text-emerald-700 transition text-sm"><i class="fa-solid fa-calendar-days w-5 text-center mr-2 text-emerald-500"></i>Planificación (Gantt)</button>
+          </div>
+        </div>
+
+        <!-- Fase II -->
+        <div class="relative" @mouseleave="dropFase2 = false">
+          <button @mouseenter="dropFase2 = true; dropFase1 = false; dropFase3 = false"
+            class="py-2 transition flex items-center gap-1"
+            :class="['mod-ambiental','mod-comportamiento'].includes(seccion) ? 'text-emerald-800 font-semibold border-b-2 border-emerald-600' : 'text-slate-600 hover:text-emerald-700'">
+            Fase II <i class="fa-solid fa-chevron-down text-[10px] ml-0.5"></i>
+          </button>
+          <div x-show="dropFase2" x-transition class="absolute left-0 mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+            <button @click="ir('mod-ambiental')" class="block w-full text-left px-4 py-2 hover:bg-corp-50 hover:text-corp-700 transition text-sm"><i class="fa-solid fa-globe w-5 text-center mr-2 text-corp-500"></i>Modelo Ambiental</button>
+            <button @click="ir('mod-comportamiento')" class="block w-full text-left px-4 py-2 hover:bg-corp-50 hover:text-corp-700 transition text-sm"><i class="fa-solid fa-arrows-spin w-5 text-center mr-2 text-corp-500"></i>Modelo de Comportamiento</button>
+          </div>
+        </div>
+
+        <!-- Fase III -->
+        <div class="relative" @mouseleave="dropFase3 = false">
+          <button @mouseenter="dropFase3 = true; dropFase1 = false; dropFase2 = false"
+            class="py-2 transition flex items-center gap-1"
+            :class="['casos-uso','clases'].includes(seccion) ? 'text-emerald-800 font-semibold border-b-2 border-emerald-600' : 'text-slate-600 hover:text-emerald-700'">
+            Fase III <i class="fa-solid fa-chevron-down text-[10px] ml-0.5"></i>
+          </button>
+          <div x-show="dropFase3" x-transition class="absolute left-0 mt-1 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+            <button @click="ir('casos-uso')" class="block w-full text-left px-4 py-2 hover:bg-corp-50 hover:text-corp-700 transition text-sm"><i class="fa-solid fa-users-rectangle w-5 text-center mr-2 text-corp-500"></i>Diagrama de Casos de Uso</button>
+            <button @click="ir('clases')" class="block w-full text-left px-4 py-2 hover:bg-corp-50 hover:text-corp-700 transition text-sm"><i class="fa-solid fa-object-group w-5 text-center mr-2 text-corp-500"></i>Diagrama de Clases</button>
+          </div>
+        </div>
+
+        <button @click="ir('contacto')" class="py-2 transition flex items-center gap-1.5"
+          :class="seccion === 'contacto' ? 'text-emerald-800 font-semibold border-b-2 border-emerald-600' : 'text-slate-600 hover:text-emerald-700'">
+          <i class="fa-solid fa-headset text-sm"></i> Contáctanos
+        </button>
+      </nav>
+
+      <button @click="mobileOpen = !mobileOpen" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition">
+        <i class="fa-solid text-xl text-gray-700" :class="mobileOpen ? 'fa-xmark' : 'fa-bars'"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Nav -->
+  <div x-show="mobileOpen" x-transition class="lg:hidden bg-white border-t border-gray-100 shadow-lg max-h-[75vh] overflow-y-auto">
+    <div class="px-4 py-3 space-y-1 text-sm">
+      <button @click="ir('inicio')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-house mr-2 text-emerald-500"></i>Inicio</button>
+      <p class="px-3 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Fase I — Marco Teórico</p>
+      <button @click="ir('introduccion')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-book-open w-5 text-center mr-2 text-emerald-500"></i>Introducción</button>
+      <button @click="ir('antecedentes')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-landmark w-5 text-center mr-2 text-emerald-500"></i>Antecedentes</button>
+      <button @click="ir('planteamiento')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-magnifying-glass w-5 text-center mr-2 text-emerald-500"></i>Planteamiento</button>
+      <button @click="ir('arbol')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-diagram-project w-5 text-center mr-2 text-emerald-500"></i>Árbol de Problemas</button>
+      <button @click="ir('preguntas')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-circle-question w-5 text-center mr-2 text-emerald-500"></i>Preguntas</button>
+      <button @click="ir('objetivos')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-bullseye w-5 text-center mr-2 text-emerald-500"></i>Objetivos</button>
+      <button @click="ir('metodo')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-flask-vial w-5 text-center mr-2 text-emerald-500"></i>Método</button>
+      <button @click="ir('planificacion')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-calendar-days w-5 text-center mr-2 text-emerald-500"></i>Planificación</button>
+      <p class="px-3 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Fase II — Análisis Estructurado</p>
+      <button @click="ir('mod-ambiental')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-corp-50 transition"><i class="fa-solid fa-globe w-5 text-center mr-2 text-corp-500"></i>Modelo Ambiental</button>
+      <button @click="ir('mod-comportamiento')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-corp-50 transition"><i class="fa-solid fa-arrows-spin w-5 text-center mr-2 text-corp-500"></i>Modelo de Comportamiento</button>
+      <p class="px-3 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Fase III — Orientado a Objetos</p>
+      <button @click="ir('casos-uso')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-corp-50 transition"><i class="fa-solid fa-users-rectangle w-5 text-center mr-2 text-corp-500"></i>Casos de Uso</button>
+      <button @click="ir('clases')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-corp-50 transition"><i class="fa-solid fa-object-group w-5 text-center mr-2 text-corp-500"></i>Clases</button>
+      <hr class="my-2">
+      <button @click="ir('contacto')" class="block w-full text-left px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-headset w-5 text-center mr-2 text-emerald-500"></i>Contáctanos</button>
+    </div>
+  </div>
+</header>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  HERO SECTION (CON FONDO INTEGRAL Y EFECTO DE TRANSICIÓN)    ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<section x-show="seccion === 'inicio'" x-transition class="pt-16 relative bg-[#f4f8f6] overflow-hidden min-h-[580px] lg:min-h-[640px] flex items-center">
+
+  <!-- Imagen de fondo oficial completa con transición suave -->
+  <div class="absolute inset-0 z-0">
+    <img src="fondo-hero.png" alt="Farmacias Colque — Fondo Hero"
+         class="w-full h-full object-cover object-right md:object-center transition-transform duration-1000 ease-out" />
+    
+    <!-- Capa de transición / gradiente suave para garantizar nitidez y contraste -->
+    <div class="absolute inset-0 bg-gradient-to-r from-white/95 via-white/80 to-transparent lg:from-white/70 lg:via-transparent lg:to-transparent pointer-events-none"></div>
+  </div>
+
+  <!-- Contenedor del contenido del Hero alineado a la izquierda -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20 relative z-10 w-full">
+    <div class="max-w-xl lg:max-w-2xl flex flex-col justify-center">
+      
+      <!-- Línea decorativa verde oficial -->
+      <div class="w-12 h-1 bg-emerald-600 rounded-full mb-6"></div>
+
+      <!-- Título principal -->
+      <h1 class="text-3xl sm:text-4xl lg:text-[44px] font-extrabold text-slate-800 leading-[1.18] tracking-tight">
+        Análisis y Diseño de un<br />
+        Sistema de Inventario para la<br />
+        <span class="text-emerald-700">Farmacia Familiar en La Paz</span>
+      </h1>
+
+      <!-- Párrafo descriptivo -->
+      <p class="mt-6 text-sm sm:text-base text-slate-600 max-w-lg leading-relaxed">
+        Documentación completa del ciclo de vida del proyecto: desde el marco teórico hasta el <strong class="text-slate-800 font-semibold">diseño orientado a objetos</strong>, aplicando Análisis Estructurado y UML.
+      </p>
+
+      <!-- Botones de Acción (CTA) con efectos de transición interactiva -->
+      <div class="mt-8 flex flex-wrap items-center gap-4">
+        <button @click="ir('introduccion')"
+          class="inline-flex items-center gap-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-medium text-sm px-6 py-3 rounded-full shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group">
+          <i class="fa-regular fa-file-lines text-sm"></i>
+          <span>Ver Documentación</span>
+          <i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
+        </button>
+        <button @click="ir('contacto')"
+          class="inline-flex items-center gap-2 bg-white/90 backdrop-blur-sm border border-slate-300 hover:border-slate-400 hover:bg-white text-slate-700 font-medium text-sm px-6 py-3 rounded-full shadow-sm hover:shadow hover:-translate-y-0.5 transition-all duration-300">
+          <i class="fa-solid fa-headset text-sm text-emerald-600"></i>
+          <span>Contáctanos</span>
+        </button>
+      </div>
+
+      <!-- Barra inferior de 4 características con separadores -->
+      <div class="mt-12 pt-6 border-t border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-0">
+        
+        <!-- 1: Control de Medicamentos -->
+        <div class="flex items-center gap-2.5 sm:pr-4 sm:border-r border-slate-200 group cursor-default">
+          <svg class="w-8 h-8 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"></path>
+            <path d="m8.5 8.5 7 7"></path>
+          </svg>
+          <span class="text-[11px] sm:text-xs font-semibold text-slate-700 leading-tight">Control de<br>Medicamentos</span>
+        </div>
+
+        <!-- 2: Gestión de Inventario -->
+        <div class="flex items-center gap-2.5 sm:px-4 sm:border-r border-slate-200 group cursor-default">
+          <svg class="w-8 h-8 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path>
+            <path d="m3.3 7 8.7 5 8.7-5"></path>
+            <path d="M12 22V12"></path>
+          </svg>
+          <span class="text-[11px] sm:text-xs font-semibold text-slate-700 leading-tight">Gestión de<br>Inventario</span>
+        </div>
+
+        <!-- 3: Atención de Clientes -->
+        <div class="flex items-center gap-2.5 sm:px-4 sm:border-r border-slate-200 group cursor-default">
+          <svg class="w-8 h-8 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          <span class="text-[11px] sm:text-xs font-semibold text-slate-700 leading-tight">Atención de<br>Clientes</span>
+        </div>
+
+        <!-- 4: Mayor Eficiencia -->
+        <div class="flex items-center gap-2.5 sm:pl-4 group cursor-default">
+          <svg class="w-8 h-8 text-emerald-600 shrink-0 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M12 8v8"></path>
+            <path d="M8 12h8"></path>
+          </svg>
+          <span class="text-[11px] sm:text-xs font-semibold text-slate-700 leading-tight">Mayor<br>Eficiencia</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  CONTENEDOR PRINCIPAL: SIDEBAR + PANEL                     ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<main x-show="seccion !== 'inicio'" x-transition class="pt-20 min-h-screen">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+    <div class="flex gap-8">
+
+      <!-- SIDEBAR -->
+      <aside class="hidden lg:block w-64 shrink-0">
+        <div class="sticky top-20 bg-white rounded-2xl shadow-sm border border-gray-100 p-4 space-y-1 max-h-[calc(100vh-6rem)] overflow-y-auto">
+          <p class="px-3 pt-1 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fase I — Marco Teórico</p>
+          <button @click="ir('introduccion')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'introduccion' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-book-open w-4 text-center text-emerald-500 text-xs"></i> Introducción</button>
+          <button @click="ir('antecedentes')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'antecedentes' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-landmark w-4 text-center text-emerald-500 text-xs"></i> Antecedentes</button>
+          <button @click="ir('planteamiento')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'planteamiento' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-magnifying-glass w-4 text-center text-emerald-500 text-xs"></i> Planteamiento</button>
+          <button @click="ir('arbol')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'arbol' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-diagram-project w-4 text-center text-emerald-500 text-xs"></i> Árbol de Problemas</button>
+          <button @click="ir('preguntas')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'preguntas' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-circle-question w-4 text-center text-emerald-500 text-xs"></i> Preguntas</button>
+          <button @click="ir('objetivos')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'objetivos' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-bullseye w-4 text-center text-emerald-500 text-xs"></i> Objetivos</button>
+          <button @click="ir('metodo')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'metodo' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-flask-vial w-4 text-center text-emerald-500 text-xs"></i> Método</button>
+          <button @click="ir('planificacion')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'planificacion' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-calendar-days w-4 text-center text-emerald-500 text-xs"></i> Planificación (Gantt)</button>
+
+          <hr class="my-3 border-gray-100">
+          <p class="px-3 pt-1 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fase II — Análisis</p>
+          <button @click="ir('mod-ambiental')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'mod-ambiental' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-globe w-4 text-center text-corp-500 text-xs"></i> Mod. Ambiental</button>
+          <button @click="ir('mod-comportamiento')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'mod-comportamiento' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-arrows-spin w-4 text-center text-corp-500 text-xs"></i> Mod. Comportamiento</button>
+
+          <hr class="my-3 border-gray-100">
+          <p class="px-3 pt-1 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fase III — OO</p>
+          <button @click="ir('casos-uso')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'casos-uso' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-users-rectangle w-4 text-center text-corp-500 text-xs"></i> Casos de Uso</button>
+          <button @click="ir('clases')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'clases' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-object-group w-4 text-center text-corp-500 text-xs"></i> Clases</button>
+
+          <hr class="my-3 border-gray-100">
+          <button @click="ir('contacto')" class="sidebar-link flex items-center gap-2 w-full text-left text-sm px-3 py-2 rounded-lg transition" :class="seccion === 'contacto' ? 'active' : 'text-gray-600 hover:bg-gray-50'"><i class="fa-solid fa-headset w-4 text-center text-emerald-500 text-xs"></i> Contáctanos</button>
+        </div>
+      </aside>
+
+      <!-- Mobile sidebar toggle -->
+      <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden fixed bottom-6 right-6 z-40 w-14 h-14 bg-emerald-600 text-white rounded-full shadow-xl flex items-center justify-center hover:bg-emerald-700 transition">
+        <i class="fa-solid fa-compass text-xl"></i>
+      </button>
+
+      <!-- Mobile sidebar overlay -->
+      <div x-show="sidebarOpen" x-transition class="lg:hidden fixed inset-0 z-40 bg-black/30" @click="sidebarOpen = false">
+        <div @click.stop class="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl p-5 pt-20 overflow-y-auto">
+          <p class="px-3 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fase I</p>
+          <button @click="ir('introduccion')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-emerald-50 transition">Introducción</button>
+          <button @click="ir('antecedentes')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-emerald-50 transition">Antecedentes</button>
+          <button @click="ir('planteamiento')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-emerald-50 transition">Planteamiento</button>
+          <button @click="ir('arbol')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-emerald-50 transition">Árbol de Problemas</button>
+          <button @click="ir('preguntas')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-emerald-50 transition">Preguntas</button>
+          <button @click="ir('objetivos')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-emerald-50 transition">Objetivos</button>
+          <button @click="ir('metodo')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-emerald-50 transition">Método</button>
+          <button @click="ir('planificacion')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-emerald-50 transition">Planificación</button>
+          <hr class="my-3">
+          <p class="px-3 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fase II</p>
+          <button @click="ir('mod-ambiental')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-corp-50 transition">Modelo Ambiental</button>
+          <button @click="ir('mod-comportamiento')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-corp-50 transition">Modelo de Comportamiento</button>
+          <hr class="my-3">
+          <p class="px-3 pb-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fase III</p>
+          <button @click="ir('casos-uso')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-corp-50 transition">Casos de Uso</button>
+          <button @click="ir('clases')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-corp-50 transition">Clases</button>
+          <hr class="my-3">
+          <button @click="ir('contacto')" class="block w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-emerald-50 transition"><i class="fa-solid fa-headset mr-2 text-emerald-500"></i>Contáctanos</button>
+        </div>
+      </div>
+
+
+      <!-- ══════════════════════════════════════════════════════════
+           PANEL DE CONTENIDO
+      ══════════════════════════════════════════════════════════ -->
+      <div class="flex-1 min-w-0">
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE I — INTRODUCCIÓN                              │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="introduccion" x-show="seccion === 'introduccion'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase I</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-emerald-600 font-medium">Introducción</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-book-open text-emerald-600"></i></span>
+              Introducción
+            </h2>
+            <hr class="my-6 border-gray-100">
+            <div class="prose prose-gray max-w-none space-y-4 text-gray-600 leading-relaxed">
+              <p>Una farmacia vive de saber qué tiene, cuánto tiene y hasta cuándo le sirve. En las farmacias familiares eso se complica cuando las herramientas informáticas son difíciles de usar y el personal termina llevando todo a mano.</p>
+              <p>Esta investigación parte de un caso concreto: una farmacia familiar de la ciudad de La Paz que no maneja bien su inventario. El control manual produce errores al registrar la mercadería y nadie sabe con certeza cuánto stock hay, así que cuesta detectar qué falta, qué sobra y qué está por vencerse. También fallan el control de precios, la facturación y el seguimiento de los laboratorios proveedores, y todo termina en pérdidas de dinero.</p>
+              <p>Por eso se propone el análisis y diseño de un sistema de inventario hecho a la medida de esta farmacia, con Análisis Estructurado y con Análisis y Diseño Orientado a Objetos en UML. La idea es simplificar el control, contar con datos confiables y mejorar el trabajo diario durante la gestión 2026.</p>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE I — ANTECEDENTES                              │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="antecedentes" x-show="seccion === 'antecedentes'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase I</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-emerald-600 font-medium">Antecedentes</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-landmark text-emerald-600"></i></span>
+              Antecedentes
+            </h2>
+            <hr class="my-6 border-gray-100">
+            <div class="prose prose-gray max-w-none space-y-4 text-gray-600 leading-relaxed">
+              <p>En Bolivia, y sobre todo en La Paz, las farmacias minoristas suelen ser el primer lugar al que acude la gente cuando tiene un problema de salud. Aun así, la mayoría de las farmacias familiares sigue con una gestión tradicional que se queda corta ahora que el mercado crece y se exige más control.</p>
+              <p>Durante años el inventario se llevó de forma empírica, con cuadernos u hojas de cálculo que nadie actualizaba. Después llegaron los programas genéricos y los sistemas comerciales ya armados. En la farmacia estudiada, esos programas resultaron tener pantallas complicadas, un aprendizaje largo y poca flexibilidad para el trabajo real del personal.</p>
+              <p>Administradores y empleados dejaron de usarlos y volvieron al papel. Ese regreso es el antecedente directo del problema actual: se registran mal las entradas y salidas de medicamentos, se pierde el rastro del laboratorio que entregó cada producto, falla la facturación y crece el riesgo de acumular productos vencidos.</p>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE I — PLANTEAMIENTO DEL PROBLEMA                │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="planteamiento" x-show="seccion === 'planteamiento'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase I</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-emerald-600 font-medium">Planteamiento del Problema</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-magnifying-glass text-emerald-600"></i></span>
+              Planteamiento del Problema
+            </h2>
+            <hr class="my-6 border-gray-100">
+            <div class="prose prose-gray max-w-none space-y-4 text-gray-600 leading-relaxed">
+              <p>Administrar bien los productos farmacéuticos es indispensable para que un establecimiento de salud siga funcionando. La farmacia sí tiene un sistema informático, pero es tan complicado que el personal lo rechaza. Sin poder usarlo, la administración y los empleados hacen todo con métodos manuales, y esa dependencia deja consecuencias operativas y económicas:</p>
+              <ul class="list-disc list-inside space-y-2 ml-2">
+                <li>Errores de registro en las entradas y salidas de mercadería.</li>
+                <li>Falta de control de stock: no se sabe cuánto hay de cada producto ni qué está por vencer.</li>
+                <li>Pérdidas económicas por fallas en la facturación en línea y precios de venta desactualizados.</li>
+                <li>Falta de trazabilidad: no se puede rastrear de qué laboratorio viene cada producto.</li>
+              </ul>
+              <p>Como los métodos manuales hoy rinden más que la tecnología disponible y las pérdidas continúan, hace falta un sistema más simple que resuelva estas deficiencias desde la raíz.</p>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE I — ÁRBOL DE PROBLEMAS                        │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="arbol" x-show="seccion === 'arbol'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase I</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-emerald-600 font-medium">Árbol de Problemas</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-diagram-project text-emerald-600"></i></span>
+              Árbol de Problemas
+            </h2>
+            <hr class="my-6 border-gray-100">
+
+            <!-- Árbol visual con cards -->
+            <div class="grid md:grid-cols-3 gap-5 mb-8">
+              <!-- Efectos -->
+              <div class="bg-red-50 border border-red-200 rounded-xl p-5">
+                <h4 class="text-xs font-bold uppercase tracking-widest text-red-500 mb-3"><i class="fa-solid fa-arrow-up mr-1"></i>Efectos</h4>
+                <ol class="list-decimal list-inside text-sm text-gray-600 space-y-2">
+                  <li>Errores constantes al registrar a mano la entrada y salida de medicamentos.</li>
+                  <li>Desconocimiento del stock real: lo que hay en físico no coincide con lo que se cree tener.</li>
+                  <li>Riesgo de acumular medicamentos vencidos, porque no se controlan las fechas de expiración.</li>
+                  <li>Fallas en la facturación en línea y en la actualización de precios.</li>
+                  <li>Falta de trazabilidad de los laboratorios.</li>
+                </ol>
+              </div>
+
+              <!-- Problema Central -->
+              <div class="bg-amber-50 border-2 border-amber-400 rounded-xl p-5 flex flex-col items-center justify-center text-center">
+                <h4 class="text-xs font-bold uppercase tracking-widest text-amber-600 mb-3"><i class="fa-solid fa-exclamation-triangle mr-1"></i>Problema Central</h4>
+                <p class="text-lg font-bold text-gray-800">Mala gestión del inventario</p>
+              </div>
+
+              <!-- Causas -->
+              <div class="bg-blue-50 border border-blue-200 rounded-xl p-5">
+                <h4 class="text-xs font-bold uppercase tracking-widest text-blue-500 mb-3"><i class="fa-solid fa-arrow-down mr-1"></i>Causas</h4>
+                <ol class="list-decimal list-inside text-sm text-gray-600 space-y-2">
+                  <li>El sistema actual tiene una interfaz y un manejo demasiado complicados.</li>
+                  <li>El personal lo rechaza porque cuesta aprenderlo.</li>
+                  <li>El control diario depende de cuadernos y anotaciones informales.</li>
+                  <li>No hay un proceso automatizado que una compras, proveedores e inventario.</li>
+                </ol>
+              </div>
+            </div>
+
+            <!-- Diagrama Mermaid del Árbol -->
+            <div class="mermaid-diagram p-6 bg-gray-50 rounded-xl border border-gray-200 overflow-x-auto shadow-sm">
+              <pre class="mermaid-source hidden">
+graph TD
+  E1["🔴 Errores constantes de registro manual"] --> P["⚠️ PROBLEMA CENTRAL:<br/>Mala gestión del inventario"]
+  E2["🔴 Desconocimiento del stock real"] --> P
+  E3["🔴 Riesgo de acumular medicamentos vencidos"] --> P
+  E4["🔴 Fallas en facturación en línea y precios"] --> P
+  E5["🔴 Falta de trazabilidad de laboratorios"] --> P
+  P --> C1["🔵 Sistema actual con interfaz complicada"]
+  P --> C2["🔵 El personal lo rechaza"]
+  P --> C3["🔵 Control diario con cuadernos"]
+  P --> C4["🔵 Sin proceso automatizado compras-proveedores-inventario"]
+              </pre>
+              <div class="mermaid-target flex justify-center w-full min-h-[140px] items-center">
+                <span class="text-xs text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Renderizando árbol...</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE I — PREGUNTAS DE INVESTIGACIÓN                │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="preguntas" x-show="seccion === 'preguntas'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase I</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-emerald-600 font-medium">Preguntas de Investigación</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-circle-question text-emerald-600"></i></span>
+              Preguntas de Investigación
+            </h2>
+            <hr class="my-6 border-gray-100">
+            <div class="prose prose-gray max-w-none space-y-6 text-gray-600 leading-relaxed">
+              <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-700 mb-2"><i class="fa-solid fa-star mr-1"></i>Pregunta Principal</h3>
+                <p class="text-gray-700 font-medium">¿De qué manera un sistema de análisis y diseño optimizado permitirá mejorar la gestión de inventario en la farmacia familiar de La Paz durante la gestión 2026?</p>
+              </div>
+
+              <h3 class="text-lg font-semibold text-gray-800">Preguntas Secundarias</h3>
+              <div class="space-y-3">
+                <div class="flex gap-3 items-start bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <span class="shrink-0 w-7 h-7 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <p>¿Cómo influyen la complejidad del sistema actual y la dependencia de métodos manuales en los errores de registro?</p>
+                </div>
+                <div class="flex gap-3 items-start bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <span class="shrink-0 w-7 h-7 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <p>¿Por qué la falta de un control automatizado de stock aumenta el riesgo de desconocer lo que hay y de acumular productos vencidos?</p>
+                </div>
+                <div class="flex gap-3 items-start bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <span class="shrink-0 w-7 h-7 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <p>¿Qué fallas se presentan en la facturación en línea y en el control de precios?</p>
+                </div>
+                <div class="flex gap-3 items-start bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <span class="shrink-0 w-7 h-7 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                  <p>¿Cómo afecta la falta de un registro estructurado a la trazabilidad de los laboratorios proveedores?</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE I — OBJETIVOS                                 │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="objetivos" x-show="seccion === 'objetivos'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase I</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-emerald-600 font-medium">Objetivos</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-bullseye text-emerald-600"></i></span>
+              Objetivos
+            </h2>
+            <hr class="my-6 border-gray-100">
+            <div class="prose prose-gray max-w-none space-y-6 text-gray-600 leading-relaxed">
+              <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-5">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-700 mb-2"><i class="fa-solid fa-crosshairs mr-1"></i>Objetivo General</h3>
+                <p class="text-gray-700">Desarrollar el análisis y diseño de un sistema informático sencillo e intuitivo que mejore la gestión de inventario en la farmacia familiar de La Paz durante la gestión 2026, reemplace los procesos manuales y corrija las fallas del software anterior.</p>
+              </div>
+
+              <h3 class="text-lg font-semibold text-gray-800">Objetivos Específicos</h3>
+              <div class="space-y-3">
+                <div class="flex gap-3 items-start bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <span class="shrink-0 w-7 h-7 bg-corp-100 text-corp-700 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                  <p>Analizar cómo trabaja hoy la farmacia, para identificar las causas exactas del rechazo al sistema anterior y de la dependencia de registros manuales.</p>
+                </div>
+                <div class="flex gap-3 items-start bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <span class="shrink-0 w-7 h-7 bg-corp-100 text-corp-700 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                  <p>Diseñar modelos estructurados y orientados a objetos (UML) que controlen de forma automática las entradas, salidas y existencias de medicamentos.</p>
+                </div>
+                <div class="flex gap-3 items-start bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <span class="shrink-0 w-7 h-7 bg-corp-100 text-corp-700 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                  <p>Establecer un módulo de control de fechas de expiración que evite acumular productos vencidos.</p>
+                </div>
+                <div class="flex gap-3 items-start bg-gray-50 rounded-lg p-4 border border-gray-100">
+                  <span class="shrink-0 w-7 h-7 bg-corp-100 text-corp-700 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+                  <p>Incorporar requerimientos para mejorar la facturación en línea, la actualización de precios y la trazabilidad de los laboratorios.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE I — MÉTODO, MEDIOS E INSTRUMENTOS             │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="metodo" x-show="seccion === 'metodo'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase I</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-emerald-600 font-medium">Método, Medios e Instrumentos</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-flask-vial text-emerald-600"></i></span>
+              Método, Medios e Instrumentos
+            </h2>
+            <hr class="my-6 border-gray-100">
+            <div class="prose prose-gray max-w-none space-y-6 text-gray-600 leading-relaxed">
+              <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3"><i class="fa-solid fa-microscope text-emerald-500 mr-2"></i>Tipo y Enfoque</h3>
+                <p>El proyecto usa un <strong>enfoque mixto</strong>. La parte <em>cualitativa</em> busca entender por qué se rechazó el sistema anterior, qué dificultades tiene el personal y cómo funcionan hoy los procesos manuales. La parte <em>cuantitativa</em> mide cuántos errores de registro hay, cuánto tiempo se gasta en tareas manuales, con qué frecuencia aparecen productos vencidos y cuánto dinero se pierde por fallas en el inventario y la facturación.</p>
+              </div>
+
+              <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3"><i class="fa-solid fa-users text-corp-500 mr-2"></i>Población y Muestra</h3>
+                <p>El estudio se concentra en la farmacia familiar y distingue dos roles según el acceso que tendrán en el futuro sistema:</p>
+                <div class="grid sm:grid-cols-2 gap-4 mt-3">
+                  <div class="bg-white rounded-lg p-4 border border-gray-200">
+                    <p class="font-semibold text-emerald-700"><i class="fa-solid fa-user-tie mr-1"></i> Propietaria</p>
+                    <p class="text-sm mt-1">Control total, visión financiera y poder de decisión.</p>
+                  </div>
+                  <div class="bg-white rounded-lg p-4 border border-gray-200">
+                    <p class="font-semibold text-corp-700"><i class="fa-solid fa-user mr-1"></i> Personal Operativo</p>
+                    <p class="text-sm mt-1">Ventas y registros diarios con acceso más limitado.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="bg-gray-50 rounded-xl p-5 border border-gray-100">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3"><i class="fa-solid fa-clipboard-list text-emerald-500 mr-2"></i>Recolección de Datos</h3>
+                <ul class="list-disc list-inside space-y-2 ml-2">
+                  <li><strong>Entrevistas semiestructuradas</strong> a la propietaria, para conocer la operación diaria, lo que falló con el software anterior y cómo se controla a los laboratorios.</li>
+                  <li><strong>Guía de observación directa</strong> en el mostrador y en la trastienda, para ver cómo se hacen en la práctica los registros manuales, la facturación y el manejo físico del inventario.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE I — PLANIFICACIÓN / CRONOGRAMA                │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="planificacion" x-show="seccion === 'planificacion'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase I</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-emerald-600 font-medium">Planificación</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-calendar-days text-emerald-600"></i></span>
+              Cronograma de Actividades
+            </h2>
+            <hr class="my-6 border-gray-100">
+
+            <p class="text-gray-600 mb-6">Las actividades se distribuyen en octubre de 2026.</p>
+
+            <!-- DIAGRAMA GANTT ORIGINAL -->
+            <div class="mermaid-diagram p-6 bg-gray-50 rounded-xl border border-gray-200 overflow-x-auto mb-8 shadow-sm">
+              <pre class="mermaid-source hidden">
+gantt
+  dateFormat YYYY-MM-DD
+  axisFormat %d %b
+  title Cronograma, octubre de 2026
+  section Diagnóstico
+  Inicio y definición del problema central :a1, 2026-10-06, 1d
+  Visita y entrevistas preliminares al personal :a2, 2026-10-09, 1d
+  Entrevista a fondo con la propietaria :a3, 2026-10-15, 1d
+  section Diseño
+  Análisis y diseño, modelado UML :a4, 2026-10-22, 1d
+  section Entrega
+  Desarrollo y maquetación del blog :a5, 2026-10-26, 3d
+  Presentación oficial a la cátedra :milestone, a6, 2026-10-29, 1d
+              </pre>
+              <div class="mermaid-target flex justify-center w-full min-h-[180px] items-center">
+                <span class="text-xs text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Renderizando cronograma Gantt...</span>
+              </div>
+            </div>
+
+            <!-- Tabla de actividades -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm border-collapse">
+                <thead>
+                  <tr class="bg-emerald-50">
+                    <th class="border border-gray-200 px-4 py-3 text-left font-semibold text-emerald-800">Fecha</th>
+                    <th class="border border-gray-200 px-4 py-3 text-left font-semibold text-emerald-800">Actividad</th>
+                  </tr>
+                </thead>
+                <tbody class="text-gray-600">
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 font-medium whitespace-nowrap">6 de octubre</td>
+                    <td class="border border-gray-200 px-4 py-3">Inicio del proyecto. Se identifica y define el problema central.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 font-medium whitespace-nowrap">9 de octubre</td>
+                    <td class="border border-gray-200 px-4 py-3">Visita a la farmacia y entrevistas preliminares a los empleados.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 font-medium whitespace-nowrap">15 de octubre</td>
+                    <td class="border border-gray-200 px-4 py-3">Entrevista a fondo con la propietaria.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 font-medium whitespace-nowrap">22 de octubre</td>
+                    <td class="border border-gray-200 px-4 py-3">Análisis y diseño: estructura documental, abstracción de datos y modelado UML.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 font-medium whitespace-nowrap">26 al 28 de octubre</td>
+                    <td class="border border-gray-200 px-4 py-3">Desarrollo, diseño y maquetación del blog o sitio web.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 font-medium whitespace-nowrap">29 de octubre</td>
+                    <td class="border border-gray-200 px-4 py-3">Presentación oficial del blog y sitio web a la cátedra.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE II — MODELO AMBIENTAL                         │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="mod-ambiental" x-show="seccion === 'mod-ambiental'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase II</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-corp-600 font-medium">Modelo Ambiental</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-corp-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-globe text-corp-600"></i></span>
+              Modelo Ambiental
+            </h2>
+            <hr class="my-6 border-gray-100">
+            <div class="prose prose-gray max-w-none space-y-4 text-gray-600 leading-relaxed">
+              <p>El diagrama de contexto muestra el sistema como una sola burbuja y los flujos de datos que intercambia con quienes lo rodean.</p>
+            </div>
+
+            <!-- DIAGRAMA DE CONTEXTO ORIGINAL -->
+            <div class="mermaid-diagram mt-6 p-6 bg-gray-50 rounded-xl border border-gray-200 overflow-x-auto shadow-sm">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-corp-600 mb-4"><i class="fa-solid fa-diagram-project mr-1"></i>Diagrama de Contexto</h3>
+              <pre class="mermaid-source hidden">
+flowchart LR
+  P([Propietaria])
+  E([Personal operativo])
+  L([Laboratorios proveedores])
+  C([Cliente])
+  F([Facturación en línea])
+  S((Sistema de inventario de la farmacia))
+  P -->|Altas de productos, precios, consultas| S
+  S -->|Reportes y alertas de vencimiento| P
+  E -->|Ventas e ingresos de mercadería| S
+  S -->|Stock disponible y comprobantes| E
+  L -->|Facturas de compra y lotes| S
+  S -->|Pedidos de reposición| L
+  C -->|Solicitud de producto| S
+  S -->|Producto y factura| C
+  S -->|Datos de la venta| F
+  F -->|Autorización de la factura| S
+              </pre>
+              <div class="mermaid-target flex justify-center w-full min-h-[220px] items-center">
+                <span class="text-xs text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Renderizando diagrama de contexto...</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE II — MODELO DE COMPORTAMIENTO                 │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="mod-comportamiento" x-show="seccion === 'mod-comportamiento'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase II</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-corp-600 font-medium">Modelo de Comportamiento</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-corp-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-arrows-spin text-corp-600"></i></span>
+              Modelo de Comportamiento
+            </h2>
+            <hr class="my-6 border-gray-100">
+            <div class="prose prose-gray max-w-none text-gray-600 leading-relaxed mb-6">
+              <p>Se describe con una lista de eventos, con la respuesta que el sistema debe dar a cada uno, y con el ciclo de vida de un producto en el inventario.</p>
+            </div>
+
+            <!-- Tabla de Eventos -->
+            <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fa-solid fa-list-check text-corp-500 mr-2"></i>Eventos y Respuestas</h3>
+            <div class="overflow-x-auto mb-8">
+              <table class="w-full text-sm border-collapse">
+                <thead>
+                  <tr class="bg-corp-50">
+                    <th class="border border-gray-200 px-4 py-3 text-center font-semibold text-corp-800 w-12">N.°</th>
+                    <th class="border border-gray-200 px-4 py-3 text-left font-semibold text-corp-800">Evento</th>
+                    <th class="border border-gray-200 px-4 py-3 text-left font-semibold text-corp-800">Respuesta del sistema</th>
+                  </tr>
+                </thead>
+                <tbody class="text-gray-600">
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 text-center font-bold text-corp-600">1</td>
+                    <td class="border border-gray-200 px-4 py-3">Llega mercadería de un laboratorio</td>
+                    <td class="border border-gray-200 px-4 py-3">Registra la compra, crea el lote con su fecha de vencimiento y suma las existencias.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 text-center font-bold text-corp-600">2</td>
+                    <td class="border border-gray-200 px-4 py-3">Un cliente compra un producto</td>
+                    <td class="border border-gray-200 px-4 py-3">Registra la venta, descuenta del lote que vence primero y emite la factura.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 text-center font-bold text-corp-600">3</td>
+                    <td class="border border-gray-200 px-4 py-3">Cambia el precio de un producto</td>
+                    <td class="border border-gray-200 px-4 py-3">Actualiza el precio de venta y guarda el valor anterior.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 text-center font-bold text-corp-600">4</td>
+                    <td class="border border-gray-200 px-4 py-3">Un lote se acerca a su fecha de vencimiento</td>
+                    <td class="border border-gray-200 px-4 py-3">Genera una alerta para la propietaria y el personal.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 text-center font-bold text-corp-600">5</td>
+                    <td class="border border-gray-200 px-4 py-3">Las existencias bajan del mínimo</td>
+                    <td class="border border-gray-200 px-4 py-3">Genera una alerta de reposición con el laboratorio que provee el producto.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 text-center font-bold text-corp-600">6</td>
+                    <td class="border border-gray-200 px-4 py-3">Un lote vence</td>
+                    <td class="border border-gray-200 px-4 py-3">Lo marca como vencido y lo retira de las ventas.</td>
+                  </tr>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="border border-gray-200 px-4 py-3 text-center font-bold text-corp-600">7</td>
+                    <td class="border border-gray-200 px-4 py-3">La propietaria pide un reporte</td>
+                    <td class="border border-gray-200 px-4 py-3">Muestra stock, ventas, pérdidas y compras por laboratorio.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- DIAGRAMA DE ESTADOS ORIGINAL (CICLO DE VIDA) -->
+            <h3 class="text-lg font-semibold text-gray-800 mb-4"><i class="fa-solid fa-rotate text-corp-500 mr-2"></i>Ciclo de Vida de un Producto</h3>
+            <div class="mermaid-diagram p-6 bg-gray-50 rounded-xl border border-gray-200 overflow-x-auto shadow-sm">
+              <pre class="mermaid-source hidden">
+stateDiagram-v2
+  state "En stock" as EnStock
+  state "Stock bajo" as StockBajo
+  state "Por vencer" as PorVencer
+  [*] --> EnStock : Ingreso de lote
+  EnStock --> StockBajo : Existencias bajo el mínimo
+  StockBajo --> EnStock : Reposición
+  EnStock --> PorVencer : Fecha cercana
+  StockBajo --> PorVencer : Fecha cercana
+  PorVencer --> Vencido : Pasa la fecha
+  EnStock --> Agotado : Última unidad vendida
+  StockBajo --> Agotado : Última unidad vendida
+  PorVencer --> Agotado : Última unidad vendida
+  Agotado --> EnStock : Nuevo ingreso
+  Vencido --> [*] : Baja del inventario
+              </pre>
+              <div class="mermaid-target flex justify-center w-full min-h-[260px] items-center">
+                <span class="text-xs text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Renderizando ciclo de vida...</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE III — DIAGRAMA DE CASOS DE USO                │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="casos-uso" x-show="seccion === 'casos-uso'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase III</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-corp-600 font-medium">Diagrama de Casos de Uso</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-corp-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-users-rectangle text-corp-600"></i></span>
+              Diagrama de Casos de Uso
+            </h2>
+            <hr class="my-6 border-gray-100">
+            <div class="prose prose-gray max-w-none text-gray-600 leading-relaxed mb-6">
+              <p>La propietaria puede usar todas las funciones. El personal operativo accede solo a las de uso diario.</p>
+            </div>
+
+            <!-- DIAGRAMA CASOS DE USO ORIGINAL -->
+            <div class="mermaid-diagram p-6 bg-gray-50 rounded-xl border border-gray-200 overflow-x-auto shadow-sm">
+              <pre class="mermaid-source hidden">
+flowchart LR
+  P([Propietaria])
+  E([Personal operativo])
+  subgraph SIS[Sistema de inventario]
+    direction TB
+    U1(Iniciar sesión)
+    U2(Registrar venta)
+    U3(Emitir factura)
+    U4(Consultar stock)
+    U5(Registrar ingreso de mercadería)
+    U6(Controlar vencimientos)
+    U7(Gestionar productos)
+    U8(Actualizar precios)
+    U9(Gestionar laboratorios)
+    U10(Generar reportes)
+    U11(Gestionar usuarios)
+  end
+  E --- U1
+  E --- U2
+  E --- U3
+  E --- U4
+  E --- U5
+  P --- U1
+  P --- U4
+  P --- U5
+  P --- U6
+  P --- U7
+  P --- U8
+  P --- U9
+  P --- U10
+  P --- U11
+  U2 -.->|incluye| U3
+  U5 -.->|incluye| U6
+              </pre>
+              <div class="mermaid-target flex justify-center w-full min-h-[300px] items-center">
+                <span class="text-xs text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Renderizando casos de uso...</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  FASE III — DIAGRAMA DE CLASES                      │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="clases" x-show="seccion === 'clases'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10">
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Fase III</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-corp-600 font-medium">Diagrama de Clases</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+              <span class="w-10 h-10 bg-corp-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-object-group text-corp-600"></i></span>
+              Diagrama de Clases — Versión 1
+            </h2>
+            <hr class="my-6 border-gray-100">
+            <div class="prose prose-gray max-w-none text-gray-600 leading-relaxed mb-6">
+              <p>Primera versión del modelo de objetos. Se afinará con las entrevistas y la observación en la farmacia.</p>
+            </div>
+
+            <!-- DIAGRAMA DE CLASES ORIGINAL -->
+            <div class="mermaid-diagram p-6 bg-gray-50 rounded-xl border border-gray-200 overflow-x-auto shadow-sm">
+              <pre class="mermaid-source hidden">
+classDiagram
+  class Usuario{
+    +int id
+    +String nombre
+    +String clave
+    +iniciarSesion()
+  }
+  class Propietaria
+  class PersonalOperativo
+  class Laboratorio{
+    +int id
+    +String nombre
+    +String telefono
+    +String nit
+  }
+  class Producto{
+    +int codigo
+    +String nombre
+    +String presentacion
+    +double precioVenta
+    +int stockMinimo
+    +actualizarPrecio()
+    +calcularStock()
+  }
+  class Lote{
+    +int idLote
+    +String numero
+    +Date fechaVencimiento
+    +int cantidad
+    +estaVencido()
+    +diasParaVencer()
+  }
+  class Compra{
+    +int id
+    +Date fecha
+    +double total
+    +registrar()
+  }
+  class DetalleCompra{
+    +int cantidad
+    +double costoUnitario
+  }
+  class Venta{
+    +int id
+    +Date fecha
+    +double total
+    +registrar()
+  }
+  class DetalleVenta{
+    +int cantidad
+    +double precioUnitario
+    +double subtotal
+  }
+  class Factura{
+    +String numero
+    +Date fecha
+    +String estado
+    +emitir()
+    +anular()
+  }
+  class Alerta{
+    +String tipo
+    +String mensaje
+    +Date fecha
+  }
+  Usuario <|-- Propietaria
+  Usuario <|-- PersonalOperativo
+  Laboratorio "1" --> "*" Producto : provee
+  Laboratorio "1" --> "*" Compra : entrega
+  Producto "1" *-- "*" Lote : tiene
+  Compra "1" *-- "*" DetalleCompra
+  DetalleCompra "*" --> "1" Lote : genera
+  Venta "1" *-- "*" DetalleVenta
+  DetalleVenta "*" --> "1" Producto : vende
+  Venta "1" --> "0..1" Factura : origina
+  Usuario "1" --> "*" Venta : registra
+  Usuario "1" --> "*" Compra : registra
+  Lote "1" --> "*" Alerta : dispara
+              </pre>
+              <div class="mermaid-target flex justify-center w-full min-h-[380px] items-center">
+                <span class="text-xs text-gray-400"><i class="fa-solid fa-circle-notch fa-spin mr-1"></i> Renderizando diagrama de clases...</span>
+              </div>
+            </div>
+          </div>
+        </article>
+
+
+        <!-- ┌──────────────────────────────────────────────────────┐
+             │  CONTACTO DE LA FARMACIA                            │
+             └──────────────────────────────────────────────────────┘ -->
+        <article data-section="contacto" x-show="seccion === 'contacto'" x-transition class="fade-enter">
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 sm:p-10"
+               x-data="{
+                 enviado: false,
+                 nombre: '',
+                 contacto: '',
+                 motivo: 'consulta_medicamento',
+                 mensaje: '',
+                 enviarFormulario() {
+                   if (!this.nombre || !this.contacto) return;
+                   this.enviado = true;
+                   setTimeout(() => {
+                     this.enviado = false;
+                     this.nombre = '';
+                     this.contacto = '';
+                     this.mensaje = '';
+                   }, 5000);
+                 }
+               }">
+
+            <div class="flex items-center gap-2 text-xs text-gray-400 mb-6">
+              <span>Farmacias Colque</span> <i class="fa-solid fa-chevron-right text-[8px]"></i> <span class="text-emerald-600 font-medium">Atención y Contacto</span>
+            </div>
+
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gray-100">
+              <div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-3">
+                  <span class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-headset text-emerald-600"></i>
+                  </span>
+                  Canales de Contacto y Atención al Cliente
+                </h2>
+                <p class="text-sm text-gray-500 mt-2">
+                  Farmacias Colque — Tu establecimiento farmacéutico familiar y de confianza en La Paz, Bolivia.
+                </p>
+              </div>
+              <div class="inline-flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 px-3.5 py-1.5 rounded-full text-xs font-semibold w-fit">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                Atención Abierta Hoy
+              </div>
+            </div>
+
+            <!-- Grid de Contacto de la Farmacia -->
+            <div class="grid lg:grid-cols-12 gap-8 mt-8">
+
+              <!-- Columna Izquierda: Información institucional y Sucursal -->
+              <div class="lg:col-span-5 space-y-6">
+
+                <!-- Tarjeta de Ubicación y Líneas directas -->
+                <div class="bg-gray-50 rounded-2xl p-6 border border-gray-200/80 space-y-4">
+                  <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-800 flex items-center gap-2">
+                    <i class="fa-solid fa-store text-emerald-600"></i> Sucursal Principal
+                  </h3>
+                  
+                  <div class="space-y-3.5 text-sm text-gray-600">
+                    <div class="flex items-start gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <i class="fa-solid fa-location-dot text-xs"></i>
+                      </div>
+                      <div>
+                        <p class="font-semibold text-gray-800">Dirección</p>
+                        <p class="text-gray-500 text-xs mt-0.5">Av. Busch esq. Pasaje San Salvador, Zona Miraflores</p>
+                        <p class="text-emerald-700 text-xs font-medium">La Paz — Bolivia</p>
+                      </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-corp-100 text-corp-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <i class="fa-solid fa-phone text-xs"></i>
+                      </div>
+                      <div>
+                        <p class="font-semibold text-gray-800">Líneas de Atención</p>
+                        <p class="text-gray-500 text-xs mt-0.5">Central fija: (+591) 2 222-4589</p>
+                        <p class="text-gray-500 text-xs">WhatsApp Farmacéutico: (+591) 715-98342</p>
+                      </div>
+                    </div>
+
+                    <div class="flex items-start gap-3">
+                      <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5">
+                        <i class="fa-solid fa-envelope text-xs"></i>
+                      </div>
+                      <div>
+                        <p class="font-semibold text-gray-800">Correo Electrónico</p>
+                        <p class="text-gray-500 text-xs mt-0.5">atencion@farmaciascolque.bo</p>
+                        <p class="text-gray-500 text-xs">pedidos@farmaciascolque.bo</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Horarios de Atención -->
+                <div class="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm space-y-3">
+                  <h3 class="text-sm font-bold uppercase tracking-wider text-corp-800 flex items-center gap-2">
+                    <i class="fa-solid fa-clock text-corp-600"></i> Horarios de Atención
+                  </h3>
+                  <div class="divide-y divide-gray-100 text-xs text-gray-600">
+                    <div class="py-2.5 flex justify-between items-center">
+                      <span class="font-medium text-gray-700">Lunes a Viernes</span>
+                      <span class="bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded font-mono">07:30 – 22:00</span>
+                    </div>
+                    <div class="py-2.5 flex justify-between items-center">
+                      <span class="font-medium text-gray-700">Sábados</span>
+                      <span class="bg-gray-100 text-gray-700 px-2.5 py-0.5 rounded font-mono">08:00 – 21:00</span>
+                    </div>
+                    <div class="py-2.5 flex justify-between items-center">
+                      <span class="font-medium text-gray-700">Domingos y Feriados</span>
+                      <span class="bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded font-medium">Turnos de emergencia</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Servicios de la farmacia -->
+                <div class="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-5">
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-emerald-900 mb-2.5 flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-heart text-emerald-600"></i> Servicios Farmacéuticos
+                  </h4>
+                  <ul class="text-xs text-emerald-900/80 space-y-2">
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-600 text-[10px]"></i> Dispensación de medicamentos con receta médica</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-600 text-[10px]"></i> Consulta y verificación de stock de laboratorios autorizados</li>
+                    <li class="flex items-center gap-2"><i class="fa-solid fa-check text-emerald-600 text-[10px]"></i> Control de presión arterial y asesoramiento al paciente</li>
+                  </ul>
+                </div>
+
+              </div>
+
+              <!-- Columna Derecha: Formulario interactivo de contacto -->
+              <div class="lg:col-span-7">
+                <div class="bg-gray-50 border border-gray-200/90 rounded-2xl p-6 sm:p-8">
+                  <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-1">
+                    <i class="fa-solid fa-paper-plane text-emerald-600"></i> Consulta Directa a la Farmacia
+                  </h3>
+                  <p class="text-xs text-gray-500 mb-6">
+                    Completa el formulario para consultar disponibilidad de fármacos, cotizaciones de lotes o pedidos especiales.
+                  </p>
+
+                  <!-- Mensaje de éxito -->
+                  <div x-show="enviado" x-transition class="mb-6 p-4 bg-emerald-100 border border-emerald-300 rounded-xl text-emerald-800 text-sm flex items-start gap-3">
+                    <i class="fa-solid fa-circle-check text-emerald-600 text-lg mt-0.5"></i>
+                    <div>
+                      <p class="font-bold">¡Mensaje enviado con éxito!</p>
+                      <p class="text-xs text-emerald-700 mt-0.5">El personal de Farmacias Colque responderá a tu solicitud a la brevedad posible.</p>
+                    </div>
+                  </div>
+
+                  <form @submit.prevent="enviarFormulario()" class="space-y-4">
+                    <div class="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Nombre Completo *</label>
+                        <input type="text" x-model="nombre" required placeholder="Ej. Carlos Mendoza"
+                          class="w-full text-sm px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition" />
+                      </div>
+                      <div>
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Teléfono o WhatsApp *</label>
+                        <input type="tel" x-model="contacto" required placeholder="Ej. 71234567"
+                          class="w-full text-sm px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-semibold text-gray-700 mb-1">Motivo de Contacto</label>
+                      <select x-model="motivo"
+                        class="w-full text-sm px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition">
+                        <option value="consulta_medicamento">Consulta de stock y precio de medicamento</option>
+                        <option value="stock_lote">Consulta de disponibilidad para tratamiento prolongado</option>
+                        <option value="proveedor_laboratorio">Contacto de laboratorio proveedor</option>
+                        <option value="atencion_general">Orientación farmacéutica y dudas generales</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label class="block text-xs font-semibold text-gray-700 mb-1">Detalle de tu Consulta o Medicamento</label>
+                      <textarea x-model="mensaje" rows="4" placeholder="Indica el nombre del fármaco, concentración, presentación o consulta que requieras..."
+                        class="w-full text-sm px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition"></textarea>
+                    </div>
+
+                    <button type="submit"
+                      class="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 px-6 rounded-xl shadow hover:shadow-md transition">
+                      <i class="fa-solid fa-paper-plane text-xs"></i> Enviar Consulta a Farmacias Colque
+                    </button>
+                    <p class="text-[11px] text-gray-400 text-center">
+                      Farmacias Colque respeta la confidencialidad de tus consultas farmacéuticas.
+                    </p>
+                  </form>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </article>
+
+      </div><!-- /flex-1 panel -->
+    </div><!-- /flex container -->
+  </div>
+</main>
+
+
+<!-- ╔══════════════════════════════════════════════════════════════╗
+     ║  FOOTER                                                    ║
+     ╚══════════════════════════════════════════════════════════════╝ -->
+<footer class="bg-gray-900 text-gray-400">
+  <div class="max-w-7xl mx-auto px-6 py-12">
+    <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div>
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fa-solid fa-prescription-bottle-medical text-emerald-400 text-xl"></i>
+          <span class="text-white font-bold text-lg">Farmacias Colque</span>
+        </div>
+        <p class="text-sm leading-relaxed mb-3">
+          Sistema de Inventario para Farmacia Familiar en La Paz, Bolivia. Plataforma orientada a la eficiencia operativa, control estricto de fechas de vencimiento y trazabilidad de medicamentos.
+        </p>
+        <span class="inline-block bg-gray-800 text-emerald-400 text-xs px-3 py-1 rounded-full font-medium">Gestión 2026</span>
+      </div>
+
+      <div>
+        <h4 class="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Navegación Rápida</h4>
+        <ul class="space-y-2 text-sm">
+          <li><button @click="ir('introduccion')" class="hover:text-emerald-400 transition"><i class="fa-solid fa-angle-right text-xs mr-1 text-emerald-500"></i> Fase I — Marco Teórico</button></li>
+          <li><button @click="ir('mod-ambiental')" class="hover:text-emerald-400 transition"><i class="fa-solid fa-angle-right text-xs mr-1 text-emerald-500"></i> Fase II — Análisis Estructurado</button></li>
+          <li><button @click="ir('casos-uso')" class="hover:text-emerald-400 transition"><i class="fa-solid fa-angle-right text-xs mr-1 text-emerald-500"></i> Fase III — Orientado a Objetos</button></li>
+          <li><button @click="ir('contacto')" class="hover:text-emerald-400 transition"><i class="fa-solid fa-angle-right text-xs mr-1 text-emerald-500"></i> Atención y Contacto de la Farmacia</button></li>
+        </ul>
+      </div>
+
+      <div>
+        <h4 class="text-white font-semibold mb-4 text-sm uppercase tracking-wider">Farmacias Colque</h4>
+        <ul class="space-y-2.5 text-sm text-gray-400">
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-location-dot text-emerald-500 mt-1 shrink-0"></i>
+            <span>Av. Busch esq. Pasaje San Salvador, La Paz, Bolivia</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-clock text-emerald-500 mt-1 shrink-0"></i>
+            <span>Lunes a Sábado: 07:30 – 22:00</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-phone text-emerald-500 mt-1 shrink-0"></i>
+            <span>Central: (+591) 2 222-4589</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <i class="fa-solid fa-shield-halved text-emerald-500 mt-1 shrink-0"></i>
+            <span>Compromiso con tu salud y bienestar familiar</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <hr class="my-8 border-gray-800">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+      <p>&copy; 2026 Farmacias Colque — Sistema de Inventario · La Paz, Bolivia</p>
+      <p class="flex items-center gap-1">Construido con <i class="fa-solid fa-heart text-red-500 mx-1"></i> usando Tailwind CSS, Alpine.js &amp; Mermaid.js</p>
+    </div>
+  </div>
+</footer>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MOTOR DE RENDERIZADO REACTIVO PARA MERMAID.JS
+     - Conserva el código fuente original en .mermaid-source
+     - Renderiza a demanda de forma asíncrona cuando el tab se activa
+     - Sin fallos por display:none ni sobreescrituras destructivas
+══════════════════════════════════════════════════════════════ -->
+<script>
+  let diagramIdSeq = 0;
+
+  async function renderSectionDiagrams(sectionId) {
+    // Breve pausa para asegurar que Alpine haya activado la visibilidad del contenedor
+    await new Promise(resolve => setTimeout(resolve, 80));
+
+    const article = document.querySelector(`article[data-section="${sectionId}"]`);
+    if (!article) return;
+
+    const diagrams = article.querySelectorAll('.mermaid-diagram');
+    for (const diagram of diagrams) {
+      const srcEl = diagram.querySelector('.mermaid-source');
+      const targetEl = diagram.querySelector('.mermaid-target');
+      if (!srcEl || !targetEl) continue;
+
+      // Si ya está renderizado con un SVG válido, no es necesario volver a dibujarlo
+      if (targetEl.getAttribute('data-rendered') === 'true' && targetEl.querySelector('svg')) {
+        continue;
+      }
+
+      // Limpiar texto y decodificar entidades HTML si las hubiese
+      const code = srcEl.textContent.trim()
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&');
+
+      const uniqueId = 'svg_diagram_' + sectionId.replace(/[^a-zA-Z0-9]/g, '_') + '_' + (++diagramIdSeq);
+
+      try {
+        const { svg, bindFunctions } = await mermaid.render(uniqueId, code);
+        targetEl.innerHTML = svg;
+        targetEl.setAttribute('data-rendered', 'true');
+        if (typeof bindFunctions === 'function') {
+          bindFunctions(targetEl);
+        }
+      } catch (err) {
+        console.error('Error renderizando diagrama en sección [' + sectionId + ']:', err);
+        // Limpiar elemento de error auxiliar que Mermaid genera en el body
+        const stray = document.getElementById(uniqueId) || document.getElementById('d' + uniqueId);
+        if (stray) stray.remove();
+
+        targetEl.innerHTML = `
+          <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-amber-500"></i>
+            <span>No se pudo procesar este diagrama de manera automática. Revisa la consola para más detalles.</span>
+          </div>
+        `;
+      }
+    }
+  }
+</script>
+
+</body>
+</html>
